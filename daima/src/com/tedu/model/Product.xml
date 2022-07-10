@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tedu.dao.ProductDao">
+	<!-- 添加商品 -->
+	<insert id="add" parameterType="com.tedu.model.Product" keyProperty="id">
+		<selectKey keyProperty="id" resultType="int" order="AFTER">
+			select LAST_INSERT_ID()
+		</selectKey>
+		insert into 
+			t_product 
+		(
+			product_name, 
+			product_price, 
+			product_sales, 
+			product_inventory, 
+			product_describe, 
+			product_discount, 
+			product_status, 
+			category_id
+		) values(
+			#{name}, 
+			#{price}, 
+			#{sales}, 
+			#{inventory}, 
+			#{describe}, 
+			#{discount} ,
+			#{status}, 
+			#{category.id}
+		)
+	</insert>
+	<!-- 删除商品 -->
+	<delete id="delete" parameterType="int">
+		delete from 
+			t_product 
+		where 
+			product_id=#{id}
+	</delete>
+	<!-- 修改商品信息 -->
+	<update id="update" parameterType="com.tedu.model.Product">
+		update t_product set 
+			product_name=#{name}, 
+			product_price=#{price}, 
+			product_sales=#{sales}, 
+			product_inventory=#{inventory}, 
+			product_describe=#{describe}, 
+			product_discount=#{discount}, 
+			product_status=#{status}, 
+			category_id=#{category.id} 
+		where 
+			product_id=#{id}
+	</update>
+	<!-- 获取一件商品信息,包括商品图片信息 -->
+	<select id="load" parameterType="int" resultMap="productMap">
+		select * from 
+			t_product p, 
+			t_img i, 
+			t_category c 
+		where 
+			p.product_id=i.product_id 
+		and 
+			p.category_id=c.category_id  
+		and 
+			p.product_id=#{id} 
+	</select>
+	<!-- 获取所有商品信息 -->
+	<select id="list" resultMap="productMap">
+		select * from 
+			t_product p,
+			t_category c 
+		where 
+			p.category_id=c.category_id
+	</select>
+	<!-- 前台首页显示所有上架商品,包括模糊查询 -->
+	<select id="listByName" parameterType="String" resultMap="productMap">
+		select * from 
+			t_product p, 
+			t_img i, 
+			t_category c 
+		where 
+			p.product_status=1 
+		and 
+			p.product_id=i.product_id 
+		and 
+			p.category_id=c.category_id  
+		<if test="name!=null">
+			and 
+				p.product_name like #{name} 
+			or 
+				c.category_name like #{name}
+		</if>
+	</select>
+	<!-- 前台首页热销商品-4件商品 -->
+	<select id="listBySales" resultMap="productMap">
+		select * from 
+			t_product p, 
+			t_img i, 
+			t_category c 
+		where 
+			p.product_status=1 
+		and 
+			p.product_id=i.product_id 
+		and 
+			p.category_id=c.category_id  
+		order by p.product_sales desc
+		limit 0, 4
+	</select>
+	<!-- 前台首页显示新上架的4件商品 -->
+	<select id="listNewProduct" parameterType="String" resultMap="productMap">
+		select * from 
+			t_product p, 
+			t_img i, 
+			t_category c 
+		where 
+			p.product_status=1 
+		and 
+			p.product_id=i.product_id 
+		and 
+			p.category_id=c.category_id  
+		order by p.product_id desc
+		limit 0, 4
+	</select>
+	
+	<resultMap type="com.tedu.model.Product" id="productMap">
+		<id property="id" column="product_id"/>
+		<result property="name" column="product_name"/>
+		<result property="price" column="product_price"/>
+		<result property="sales" column="product_sales"/>
+		<result property="inventory" column="product_inventory"/>
+		<result property="describe" column="product_describe"/>
+		<result property="discount" column="product_discount"/>
+		<result property="status" column="product_status"/>
+		<!-- 商品-类别:多对一映射 -->
+		<association property="category" column="category_id" javaType="com.tedu.model.Category" resultMap="categoryMap"></association>
+		<!-- 商品-图片:一对多映射 -->
+		<collection property="imgs" ofType="com.tedu.model.Img">
+			<id property="id" column="img_id"/>
+			<result property="name" column="img_name"/>
+		</collection>
+	</resultMap>
+	<resultMap type="com.tedu.model.Category" id="categoryMap">
+		<id property="id" column="id"/>
+		<result property="name" column="category_name"/>
+	</resultMap>
+</mapper>
